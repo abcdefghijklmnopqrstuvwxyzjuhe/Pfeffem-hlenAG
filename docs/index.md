@@ -9,3 +9,6 @@ Ich habe heute vorgehabt euch mit cuten Komplimenten zu beglücken :)
 
 
 gans gans vriische wuagwuast gibts hio ich bin nicht in Schulhäuser erlaubt da ich 19 Straftaten begangen bin ich bin kurz vom sterben.
+
+
+<img src="https://i.makeagif.com/media/5-13-2018/QNvZv0.gif" alt="funny GIF" width="100%">
