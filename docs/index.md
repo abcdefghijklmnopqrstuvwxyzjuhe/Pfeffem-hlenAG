@@ -15,7 +15,6 @@ gans gans vriische wuagwuast gibts hio ich bin nicht in Schulhäuser erlaubt da 
 
 
 
-<!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
