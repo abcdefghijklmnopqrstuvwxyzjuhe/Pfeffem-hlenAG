@@ -8,6 +8,12 @@
     margin: 0;
   }
 
+  body {
+    background: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
   canvas {
     border: 1px solid white;
   }
