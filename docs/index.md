@@ -3,9 +3,7 @@
   <title>Basic Snake HTML Game</title>
   <meta charset="UTF-8">
   <style>
-  html, body {
-    height: 100%;
-    margin: 0;
+ 
   }
 
   body {
