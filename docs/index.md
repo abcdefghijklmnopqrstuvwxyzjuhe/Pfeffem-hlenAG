@@ -157,11 +157,11 @@ function loop() {
 // listen to keyboard events to move the paddles
 document.addEventListener('keydown', function(e) {
 
-  // up arrow key
+  // i key
   if (e.which === 38) {
     rightPaddle.dy = -paddleSpeed;
   }
-  // down arrow key
+  // k key
   else if (e.which === 40) {
     rightPaddle.dy = paddleSpeed;
   }
