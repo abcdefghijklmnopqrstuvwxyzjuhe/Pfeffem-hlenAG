@@ -21,12 +21,7 @@ gans gans vriische wuagwuast gibts hio ich bin nicht in Schulhäuser erlaubt da 
   <style>
  
 
-  body {
-    background: black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+
   </style>
 </head>
 <body>
