@@ -31,7 +31,7 @@ const leftPlayer = {
   height: playerHeight,
   
   // shooting cooldown
-  cooldown: 0,
+  cooldown: 0.01,
   
   // player velocity
   dy: 0
