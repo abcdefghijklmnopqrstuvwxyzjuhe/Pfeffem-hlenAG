@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Basic Pong HTML Game</title>
-  <meta charset="UTF-8">
+  <title></title>
   <style>
- 
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
   body {
     background: black;
     display: flex;
@@ -14,51 +16,48 @@
   </style>
 </head>
 <body>
-<canvas width="750" height="585" id="game"></canvas>
+<canvas width="565" height="500" id="game"></canvas>
 <script>
 const canvas = document.getElementById('game');
 const context = canvas.getContext('2d');
 const grid = 15;
-const paddleHeight = grid * 5; // 80
-const maxPaddleY = canvas.height - grid - paddleHeight;
+const playerHeight = grid * 3; // 45
+const maxPlayerY = canvas.height - grid - playerHeight;
 
-var paddleSpeed = 6;
-var ballSpeed = 5;
+var playerSpeed = 4;
 
-const leftPaddle = {
+const leftPlayer = {
   // start in the middle of the game on the left side
   x: grid * 2,
-  y: canvas.height / 2 - paddleHeight / 2,
+  y: canvas.height / 2 - playerHeight / 2,
   width: grid,
-  height: paddleHeight,
-
-  // paddle velocity
+  height: playerHeight,
+  
+  // shooting cooldown
+  cooldown: 0,
+  
+  // player velocity
   dy: 0
 };
-const rightPaddle = {
+
+const rightPlayer = {
   // start in the middle of the game on the right side
   x: canvas.width - grid * 3,
-  y: canvas.height / 2 - paddleHeight / 2,
+  y: canvas.height / 2 - playerHeight / 2,
   width: grid,
-  height: paddleHeight,
-
-  // paddle velocity
+  height: playerHeight,
+  
+  // shooting cooldown
+  cooldown: 0,
+  
+  // player velocity
   dy: 0
 };
-const ball = {
-  // start in the middle of the game
-  x: canvas.width / 2,
-  y: canvas.height / 2,
-  width: grid,
-  height: grid,
 
-  // keep track of when need to reset the ball position
-  resetting: false,
-
-  // ball velocity (start going to the top-right corner)
-  dx: ballSpeed,
-  dy: -ballSpeed
-};
+const bullets = {
+  speed: 5,
+  array: []
+}
 
 // check for collision between two objects using axis-aligned bounding box (AABB)
 // @see https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection
@@ -73,120 +72,131 @@ function collides(obj1, obj2) {
 function loop() {
   requestAnimationFrame(loop);
   context.clearRect(0,0,canvas.width,canvas.height);
-
-  // move paddles by their velocity
-  leftPaddle.y += leftPaddle.dy;
-  rightPaddle.y += rightPaddle.dy;
-
-  // prevent paddles from going through walls
-  if (leftPaddle.y < grid) {
-    leftPaddle.y = grid;
+  
+  // bullet cooldowns
+  // left player
+  if (leftPlayer.cooldown > 0) {
+    leftPlayer.cooldown--;
   }
-  else if (leftPaddle.y > maxPaddleY) {
-    leftPaddle.y = maxPaddleY;
+  // right player
+  if (rightPlayer.cooldown > 0) {
+    rightPlayer.cooldown--;
   }
-
-  if (rightPaddle.y < grid) {
-    rightPaddle.y = grid;
+  
+  // move players by their velocity
+  leftPlayer.y += leftPlayer.dy;
+  rightPlayer.y += rightPlayer.dy;
+  
+  // prevent players from going through walls
+  if (leftPlayer.y < grid) {
+    leftPlayer.y = grid;
   }
-  else if (rightPaddle.y > maxPaddleY) {
-    rightPaddle.y = maxPaddleY;
+  else if (leftPlayer.y > maxPlayerY) {
+    leftPlayer.y = maxPlayerY;
   }
-
+  
+  if (rightPlayer.y < grid) {
+    rightPlayer.y = grid;
+  }
+  else if (rightPlayer.y > maxPlayerY) {
+    rightPlayer.y = maxPlayerY;
+  }
+  
+  // draw bullets
+  context.fillStyle = 'yellow';
+  bullets.array.forEach(function(bullet, index) {
+    context.fillRect(bullet.x, bullet.y, 10, 5);
+	
+	// check if the bullet hits a player
+	// left player
+	if (collides(bullet, leftPlayer)) {
+	  bullets.array.splice(index, 1);
+	  leftPlayer.y = canvas.height / 2 - playerHeight / 2;
+	  rightPlayer.y = canvas.height / 2 - playerHeight / 2;
+	  bullets.array.length = 0;
+	}
+	// right player
+	else if (collides(bullet, rightPlayer)) {
+	  bullets.array.splice(index, 1);
+	  leftPlayer.y = canvas.height / 2 - playerHeight / 2;
+	  rightPlayer.y = canvas.height / 2 - playerHeight / 2;
+	  bullets.array.length = 0;
+	}
+    
+    // move bullets
+    bullet.x += bullet.dx;
+	
+	// remove bullets that leave the screen
+    if (bullet.x < 0 || bullet.x > canvas.width) {
+      bullets.array.splice(index, 1);
+    }
+  });
+  
   // draw paddles
-  context.fillStyle = 'white';
-  context.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height);
-  context.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height);
-
-  // move ball by its velocity
-  ball.x += ball.dx;
-  ball.y += ball.dy;
-
-  // prevent ball from going through walls by changing its velocity
-  if (ball.y < grid) {
-    ball.y = grid;
-    ball.dy *= -1;
-  }
-  else if (ball.y + grid > canvas.height - grid) {
-    ball.y = canvas.height - grid * 2;
-    ball.dy *= -1;
-  }
-
-  // reset ball if it goes past paddle (but only if we haven't already done so)
-  if ( (ball.x < 0 || ball.x > canvas.width) && !ball.resetting) {
-    ball.resetting = true;
-
-    // give some time for the player to recover before launching the ball again
-    setTimeout(() => {
-      ball.resetting = false;
-      ball.x = canvas.width / 2;
-      ball.y = canvas.height / 2;
-    }, 400);
-  }
-
-  // check to see if ball collides with paddle. if they do change x velocity
-  if (collides(ball, leftPaddle)) {
-    ball.dx *= -1;
-
-    // move ball next to the paddle otherwise the collision will happen again
-    // in the next frame
-    ball.x = leftPaddle.x + leftPaddle.width;
-  }
-  else if (collides(ball, rightPaddle)) {
-    ball.dx *= -1;
-
-    // move ball next to the paddle otherwise the collision will happen again
-    // in the next frame
-    ball.x = rightPaddle.x - ball.width;
-  }
-
-  // draw ball
-  context.fillRect(ball.x, ball.y, ball.width, ball.height);
+  context.fillStyle = 'gold';
+  context.fillRect(leftPlayer.x, leftPlayer.y, leftPlayer.width, leftPlayer.height);
+  context.fillRect(rightPlayer.x, rightPlayer.y, rightPlayer.width, rightPlayer.height);
 
   // draw walls
-  context.fillStyle = 'lightgrey';
+  context.fillStyle = 'lightgray';
   context.fillRect(0, 0, canvas.width, grid);
   context.fillRect(0, canvas.height - grid, canvas.width, canvas.height);
-
-  // draw dotted line down the middle
-  for (let i = grid; i < canvas.height - grid; i += grid * 2) {
-    context.fillRect(canvas.width / 2 - grid / 2, i, grid, grid);
-  }
 }
 
-// listen to keyboard events to move the paddles
+// listen to keyboard events to move the players
 document.addEventListener('keydown', function(e) {
-
-  // i key
+  // up arrow key
   if (e.which === 38) {
-    rightPaddle.dy = -paddleSpeed;
+    rightPlayer.dy = -playerSpeed;
   }
-  // k key
+  // down arrow key
   else if (e.which === 40) {
-    rightPaddle.dy = paddleSpeed;
+    rightPlayer.dy = playerSpeed;
   }
-
+  
   // w key
   if (e.which === 87) {
-    leftPaddle.dy = -paddleSpeed;
+    leftPlayer.dy = -playerSpeed;
   }
   // a key
   else if (e.which === 83) {
-    leftPaddle.dy = paddleSpeed;
+    leftPlayer.dy = playerSpeed;
+  }
+  
+  // shooting
+  // left arrow key
+  if (e.which === 37 && rightPlayer.cooldown === 0) {
+    bullets.array.push({
+	  x: rightPlayer.x - 10, 
+	  y: rightPlayer.y + 20, 
+	  width: 10,
+	  height: 5,
+	  dx: -bullets.speed
+	});
+	rightPlayer.cooldown = 25;
+  }
+  // d key
+  if (e.which === 68 && leftPlayer.cooldown === 0) {
+    bullets.array.push({
+	  x: leftPlayer.x + 15, 
+	  y: leftPlayer.y + 20, 
+	  width: 10,
+	  height: 5,
+	  dx: bullets.speed
+	});
+	leftPlayer.cooldown = 25;
   }
 });
-
-// listen to keyboard events to stop the paddle if key is released
+// listen to keyboard events to stop the player if key is released
 document.addEventListener('keyup', function(e) {
   if (e.which === 38 || e.which === 40) {
-    rightPaddle.dy = 0;
+    rightPlayer.dy = 0;
   }
-
+  
   if (e.which === 83 || e.which === 87) {
-    leftPaddle.dy = 0;
+    leftPlayer.dy = 0;
   }
 });
-
 // start the game
 requestAnimationFrame(loop);
 </script>
