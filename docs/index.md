@@ -1,198 +1,166 @@
 <html>
 <head>
-  <title></title>
+  <title>Basic Snake HTML Game</title>
+  <meta charset="UTF-8">
   <style>
-  
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
   body {
     background: black;
     display: flex;
     align-items: center;
     justify-content: center;
   }
+  canvas {
+    border: 1px solid white;
+  }
   </style>
 </head>
 <body>
-<canvas width="565" height="500" id="game"></canvas>
+<canvas width="400" height="400" id="game"></canvas>
 <script>
-const canvas = document.getElementById('game');
-const context = canvas.getContext('2d');
-const grid = 15;
-const playerHeight = grid * 3; // 45
-const maxPlayerY = canvas.height - grid - playerHeight;
+var canvas = document.getElementById('game');
+var context = canvas.getContext('2d');
 
-var playerSpeed = 4;
+var grid = 16;
+var count = 0;
 
-const leftPlayer = {
-  // start in the middle of the game on the left side
-  x: grid * 2,
-  y: canvas.height / 2 - playerHeight / 2,
-  width: grid,
-  height: playerHeight,
-  
-  // shooting cooldown
-  cooldown: 0,
-  
-  // player velocity
-  dy: 0
+var snake = {
+  x: 160,
+  y: 160,
+
+  // snake velocity. moves one grid length every frame in either the x or y direction
+  dx: grid,
+  dy: 0,
+
+  // keep track of all grids the snake body occupies
+  cells: [],
+
+  // length of the snake. grows when eating an apple
+  maxCells: 4
+};
+var apple = {
+  x: 320,
+  y: 320
 };
 
-const rightPlayer = {
-  // start in the middle of the game on the right side
-  x: canvas.width - grid * 3,
-  y: canvas.height / 2 - playerHeight / 2,
-  width: grid,
-  height: playerHeight,
-  
-  // shooting cooldown
-  cooldown: 0,
-  
-  // player velocity
-  dy: 0
-};
-
-const bullets = {
-  speed: 5,
-  array: []
-}
-
-// check for collision between two objects using axis-aligned bounding box (AABB)
-// @see https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection
-function collides(obj1, obj2) {
-  return obj1.x < obj2.x + obj2.width &&
-         obj1.x + obj1.width > obj2.x &&
-         obj1.y < obj2.y + obj2.height &&
-         obj1.y + obj1.height > obj2.y;
+// get random whole numbers in a specific range
+// @see https://stackoverflow.com/a/1527820/2124254
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
 }
 
 // game loop
 function loop() {
   requestAnimationFrame(loop);
+
+  // slow game loop to 15 fps instead of 60 (60/15 = 4)
+  if (++count < 4) {
+    return;
+  }
+
+  count = 0;
   context.clearRect(0,0,canvas.width,canvas.height);
-  
-  // bullet cooldowns
-  // left player
-  if (leftPlayer.cooldown > 0) {
-    leftPlayer.cooldown--;
+
+  // move snake by it's velocity
+  snake.x += snake.dx;
+  snake.y += snake.dy;
+
+  // wrap snake position horizontally on edge of screen
+  if (snake.x < 0) {
+    snake.x = canvas.width - grid;
   }
-  // right player
-  if (rightPlayer.cooldown > 0) {
-    rightPlayer.cooldown--;
+  else if (snake.x >= canvas.width) {
+    snake.x = 0;
   }
-  
-  // move players by their velocity
-  leftPlayer.y += leftPlayer.dy;
-  rightPlayer.y += rightPlayer.dy;
-  
-  // prevent players from going through walls
-  if (leftPlayer.y < grid) {
-    leftPlayer.y = grid;
+
+  // wrap snake position vertically on edge of screen
+  if (snake.y < 0) {
+    snake.y = canvas.height - grid;
   }
-  else if (leftPlayer.y > maxPlayerY) {
-    leftPlayer.y = maxPlayerY;
+  else if (snake.y >= canvas.height) {
+    snake.y = 0;
   }
-  
-  if (rightPlayer.y < grid) {
-    rightPlayer.y = grid;
+
+  // keep track of where snake has been. front of the array is always the head
+  snake.cells.unshift({x: snake.x, y: snake.y});
+
+  // remove cells as we move away from them
+  if (snake.cells.length > snake.maxCells) {
+    snake.cells.pop();
   }
-  else if (rightPlayer.y > maxPlayerY) {
-    rightPlayer.y = maxPlayerY;
-  }
-  
-  // draw bullets
-  context.fillStyle = 'yellow';
-  bullets.array.forEach(function(bullet, index) {
-    context.fillRect(bullet.x, bullet.y, 10, 5);
-	
-	// check if the bullet hits a player
-	// left player
-	if (collides(bullet, leftPlayer)) {
-	  bullets.array.splice(index, 1);
-	  leftPlayer.y = canvas.height / 2 - playerHeight / 2;
-	  rightPlayer.y = canvas.height / 2 - playerHeight / 2;
-	  bullets.array.length = 0;
-	}
-	// right player
-	else if (collides(bullet, rightPlayer)) {
-	  bullets.array.splice(index, 1);
-	  leftPlayer.y = canvas.height / 2 - playerHeight / 2;
-	  rightPlayer.y = canvas.height / 2 - playerHeight / 2;
-	  bullets.array.length = 0;
-	}
-    
-    // move bullets
-    bullet.x += bullet.dx;
-	
-	// remove bullets that leave the screen
-    if (bullet.x < 0 || bullet.x > canvas.width) {
-      bullets.array.splice(index, 1);
+
+  // draw apple
+  context.fillStyle = 'red';
+  context.fillRect(apple.x, apple.y, grid-1, grid-1);
+
+  // draw snake one cell at a time
+  context.fillStyle = 'green';
+  snake.cells.forEach(function(cell, index) {
+
+    // drawing 1 px smaller than the grid creates a grid effect in the snake body so you can see how long it is
+    context.fillRect(cell.x, cell.y, grid-1, grid-1);
+
+    // snake ate apple
+    if (cell.x === apple.x && cell.y === apple.y) {
+      snake.maxCells++;
+
+      // canvas is 400x400 which is 25x25 grids
+      apple.x = getRandomInt(0, 25) * grid;
+      apple.y = getRandomInt(0, 25) * grid;
+    }
+
+    // check collision with all cells after this one (modified bubble sort)
+    for (var i = index + 1; i < snake.cells.length; i++) {
+
+      // snake occupies same space as a body part. reset game
+      if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+        snake.x = 160;
+        snake.y = 160;
+        snake.cells = [];
+        snake.maxCells = 4;
+        snake.dx = grid;
+        snake.dy = 0;
+
+        apple.x = getRandomInt(0, 25) * grid;
+        apple.y = getRandomInt(0, 25) * grid;
+      }
     }
   });
-  
-  // draw paddles
-  context.fillStyle = 'gold';
-  context.fillRect(leftPlayer.x, leftPlayer.y, leftPlayer.width, leftPlayer.height);
-  context.fillRect(rightPlayer.x, rightPlayer.y, rightPlayer.width, rightPlayer.height);
-
-  // draw walls
-  context.fillStyle = 'lightgray';
-  context.fillRect(0, 0, canvas.width, grid);
-  context.fillRect(0, canvas.height - grid, canvas.width, canvas.height);
 }
 
-// listen to keyboard events to move the players
+// listen to keyboard events to move the snake
 document.addEventListener('keydown', function(e) {
+  // prevent snake from backtracking on itself by checking that it's
+  // not already moving on the same axis (pressing left while moving
+  // left won't do anything, and pressing right while moving left
+  // shouldn't let you collide with your own body)
+
+  // left arrow key
+  if (e.which === 37 && snake.dx === 0) {
+    snake.dx = -grid;
+    snake.dy = 0;
+  }
   // up arrow key
-  if (e.which === 38) {
-    rightPlayer.dy = -playerSpeed;
+  else if (e.which === 38 && snake.dy === 0) {
+    snake.dy = -grid;
+    snake.dx = 0;
+  }
+  // right arrow key
+  else if (e.which === 39 && snake.dx === 0) {
+    snake.dx = grid;
+    snake.dy = 0;
   }
   // down arrow key
-  else if (e.which === 40) {
-    rightPlayer.dy = playerSpeed;
-  }
-  
-  // w key
-  if (e.which === 87) {
-    leftPlayer.dy = -playerSpeed;
-  }
-  // a key
-  else if (e.which === 83) {
-    leftPlayer.dy = playerSpeed;
-  }
-  
-  // shooting
-  // left arrow key
-  if (e.which === 37 && rightPlayer.cooldown === 0) {
-    bullets.array.push({
-	  x: rightPlayer.x - 10, 
-	  y: rightPlayer.y + 20, 
-	  width: 10,
-	  height: 5,
-	  dx: -bullets.speed
-	});
-	rightPlayer.cooldown = 25;
-  }
-  // d key
-  if (e.which === 68 && leftPlayer.cooldown === 0) {
-    bullets.array.push({
-	  x: leftPlayer.x + 15, 
-	  y: leftPlayer.y + 20, 
-	  width: 10,
-	  height: 5,
-	  dx: bullets.speed
-	});
-	leftPlayer.cooldown = 25;
+  else if (e.which === 40 && snake.dy === 0) {
+    snake.dy = grid;
+    snake.dx = 0;
   }
 });
-// listen to keyboard events to stop the player if key is released
-document.addEventListener('keyup', function(e) {
-  if (e.which === 38 || e.which === 40) {
-    rightPlayer.dy = 0;
-  }
-  
-  if (e.which === 83 || e.which === 87) {
-    leftPlayer.dy = 0;
-  }
-});
+
 // start the game
 requestAnimationFrame(loop);
 </script>
