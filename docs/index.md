@@ -1,168 +1,161 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+
 <head>
-  <title>Basic Snake HTML Game</title>
-  <meta charset="UTF-8">
-  <style>
-  html, body {
-    height: 100%;
-    margin: 0;
-  }
-
-  body {
-    background: black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  canvas {
-    border: 1px solid white;
-  }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/style.css">
+    <title>Star Battle</title>
 </head>
+
 <body>
-<canvas width="400" height="400" id="game"></canvas>
-<script>
-var canvas = document.getElementById('game');
-var context = canvas.getContext('2d');
+    <!-- Game -->
+    <div id="app">
+        <div id="logo">
+            <img src="./img/logo-01.png" alt="logo">
+        </div>
+        <div id="container" class="absolute">
+            <div id="start" class="column">
+                <p class="message pre">
+                    1. 使用 W、A、S、D 控制飞船，按下 Space 发射。
+                    2. 燃料初始值为15，每秒递减1点，当燃料值为0时，游戏结束。
+                    3. 触碰掉下的燃料瓶可增加15点，最大值为30点。
+                    4. 击中敌方飞船增加5分。行星需击中两次，增加10分。击中友方扣除10分。
+                    5. 撞击敌方损失15点燃料，撞击友方扣除10分。
+                    6. 游戏允许负分。
+                    7. 按下 P 暂停游戏，按下 M 静音。
+                    开始您的星际大战吧！
+                </p>
+                <button id="start-btn" class="btn">
+                    <p>开始游戏</p>
+                    <p>加载中...</p>
+                </button>
+            </div>
+            <div id="play" class="absolute">
+                <canvas id="canvas" class="absolute"></canvas>
+                <div class="content absolute">
+                    <div class="header">
+                        <ul class="info">
+                            <li>
+                                <img src="./img/time3.png" alt="time">
+                                <span id="time">00</span>
+                            </li>
+                            <li>
+                                <img src="./img/fuel2.png" alt="fuel">
+                                <span id="fuel">00</span>
+                            </li>
+                            <li>
+                                <img src="./img/score.png" alt="score">
+                                <span id="score">00</span>
+                            </li>
+                            <li>
+                                <img src="./img/playerBullet.png" alt="score">
+                                <span id="shoot">00</span>
+                            </li>
 
-var grid = 16;
-var count = 0;
+                        </ul>
+                        <ul class="option">
+                            <li id="game-font-size-add">
+                                <img class="pause" src="./img/a+.png" alt="time">
+                            </li>
+                            <li id="game-font-size-reduce">
+                                <img class="pause" src="./img/a-.png" alt="time">
+                            </li>
+                            <li id="game-mute-btn">
+                                <img class="pause" src="./img/mute.png" alt="time">
+                                <img class="pause" src="./img/speaker.png" alt="time">
+                            </li>
+                            <li id="game-pause-btn">
+                                <img class="pause" src="./img/play.png" alt="time">
+                                <img class="pause" src="./img/pause.png" alt="time">
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div id="over" class="column absolute">
+                <div class="game-data">
+                    <p class="message">
+                        <span>
+                            <img src="./img/time3.png" alt="time">
+                        </span>
+                        <span>
+                            --
+                        </span>
+                        <span class="time">00</span>
+                    </p>
+                    <p class="message">
+                        <span>
+                            <img src="./img/score.png" alt="score">
+                        </span>
+                        <span>
+                            --
+                        </span>
+                        <span class="score">00</span>
+                    </p>
+                    <p class="message">
+                        <span>
+                            <img src="./img/playerBullet.png" alt="score">
+                        </span>
+                        <span>
+                            --
+                        </span>
+                        <span class="shoot">00</span>
+                    </p>
+                </div>
+                <input type="text" id="name" placeholder="请输入您的名字" />
+                <button id="submit-btn" class="btn" disabled>
+                    继续游戏
+                </button>
+            </div>
+            <div id="rank" class="column absolute">
+                <table class="scroll">
+                    <thead>
+                        <tr>
+                            <th>名次</th>
+                            <th>名字</th>
+                            <th>分数</th>
+                            <th>秒数</th>
+                        </tr>
+                    </thead>
+                    <tbody>
 
-var snake = {
-  x: 160,
-  y: 160,
-
-  // snake velocity. moves one grid length every frame in either the x or y direction
-  dx: grid,
-  dy: 0,
-
-  // keep track of all grids the snake body occupies
-  cells: [],
-
-  // length of the snake. grows when eating an apple
-  maxCells: 100
-};
-var apple = {
-  x: 320,
-  y: 320
-};
-
-// get random whole numbers in a specific range
-// @see https://stackoverflow.com/a/1527820/2124254
-function getRandomInt(min, max) {
-  return Math.floor(Math.random() * (max - min)) + min;
-}
-
-// game loop
-function loop() {
-  requestAnimationFrame(loop);
-
-  // slow game loop to 15 fps instead of 60 (60/15 = 4)
-  if (++count < 4) {
-    return;
-  }
-
-  count = 0;
-  context.clearRect(0,0,canvas.width,canvas.height);
-
-  // move snake by it's velocity
-  snake.x += snake.dx;
-  snake.y += snake.dy;
-
-  // wrap snake position horizontally on edge of screen
-  if (snake.x < 0) {
-    snake.x = canvas.width - grid;
-  }
-  else if (snake.x >= canvas.width) {
-    snake.x = 0;
-  }
-
-  // wrap snake position vertically on edge of screen
-  if (snake.y < 0) {
-    snake.y = canvas.height - grid;
-  }
-  else if (snake.y >= canvas.height) {
-    snake.y = 0;
-  }
-
-  // keep track of where snake has been. front of the array is always the head
-  snake.cells.unshift({x: snake.x, y: snake.y});
-
-  // remove cells as we move away from them
-  if (snake.cells.length > snake.maxCells) {
-    snake.cells.pop();
-  }
-
-  // draw apple
-  context.fillStyle = 'red';
-  context.fillRect(apple.x, apple.y, grid-1, grid-1);
-
-  // draw snake one cell at a time
-  context.fillStyle = 'green';
-  snake.cells.forEach(function(cell, index) {
-
-    // drawing 1 px smaller than the grid creates a grid effect in the snake body so you can see how long it is
-    context.fillRect(cell.x, cell.y, grid-1, grid-1);
-
-    // snake ate apple
-    if (cell.x === apple.x && cell.y === apple.y) {
-      snake.maxCells++;
-
-      // canvas is 400x400 which is 25x25 grids
-      apple.x = getRandomInt(0, 25) * grid;
-      apple.y = getRandomInt(0, 25) * grid;
-    }
-
-    // check collision with all cells after this one (modified bubble sort)
-    for (var i = index + 1; i < snake.cells.length; i++) {
-
-      // snake occupies same space as a body part. reset game
-      if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
-        snake.x = 160;
-        snake.y = 160;
-        snake.cells = [];
-        snake.maxCells = 4;
-        snake.dx = grid;
-        snake.dy = 0;
-
-        apple.x = getRandomInt(0, 25) * grid;
-        apple.y = getRandomInt(0, 25) * grid;
-      }
-    }
-  });
-}
-
-// listen to keyboard events to move the snake
-document.addEventListener('keydown', function(e) {
-  // prevent snake from backtracking on itself by checking that it's
-  // not already moving on the same axis (pressing left while moving
-  // left won't do anything, and pressing right while moving left
-  // shouldn't let you collide with your own body)
-
-  // left arrow key
-  if (e.which === 37 && snake.dx === 0) {
-    snake.dx = -grid;
-    snake.dy = 0;
-  }
-  // up arrow key
-  else if (e.which === 38 && snake.dy === 0) {
-    snake.dy = -grid;
-    snake.dx = 0;
-  }
-  // right arrow key
-  else if (e.which === 39 && snake.dx === 0) {
-    snake.dx = grid;
-    snake.dy = 0;
-  }
-  // down arrow key
-  else if (e.which === 40 && snake.dy === 0) {
-    snake.dy = grid;
-    snake.dx = 0;
-  }
-});
-
-// start the game
-requestAnimationFrame(loop);
-</script>
+                    </tbody>
+                </table>
+                <button id="restart-btn" class="btn">
+                    返回开始
+                </button>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <span>Crafted with by
+            <a href="http://4ark.me"> @4Ark</a>/<a href="https://github.com/gd4Ark/star-battle">GitHub</a>
+        </span>
+    </footer>
+    <script src="js/config/config.js"></script>
+    <script src="js/utils/utils.js"></script>
+    <script src="js/utils/res.js"></script>
+    <script src="js/class/scene.js"></script>
+    <script src="js/class/cooldown.js"></script>
+    <script src="js/class/element.js"></script>
+    <script src="js/class/animation.js"></script>
+    <script src="js/class/plane.js"></script>
+    <script src="js/class/bullet.js"></script>
+    <script src="js/class/player.js"></script>
+    <script src="js/class/enemy.js"></script>
+    <script src="js/class/meteorite.js"></script>
+    <script src="js/class/friend.js"></script>
+    <script src="js/class/star.js"></script>
+    <script src="js/class/fuel.js"></script>
+    <script src="js/scenes/start.js"></script>
+    <script src="js/scenes/play.js"></script>
+    <script src="js/scenes/over.js"></script>
+    <script src="js/scenes/rank.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
 </body>
+
 </html>
