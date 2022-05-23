@@ -1,139 +1,168 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="utf-8" />
-<title>Snake Game</title>
-<style type="text/css">
-body {text-align:center;}
-canvas { border:7px dashed #4A4747 }
-h1 { font-size:35px; text-align: center; margin: 0; padding-bottom: 25px; text-decoration: underline; font-family: Geneva; color: #0520A5;}
-</style>
-<script type="text/javascript">
-function play_game()
-{
-var level = 160; // Game level, by decreasing will speed up
-var rect_w = 45; // Width
-var rect_h = 30; // Height
-var inc_score = 50; // Score
-var snake_color = "#0520A5"; // Snake Color
-var ctx; // Canvas attributes
-var tn = []; // temp directions storage
-var x_dir = [-1, 0, 1, 0]; // position adjusments
-var y_dir = [0, -1, 0, 1]; // position adjusments
-var queue = [];
-var frog = 1; // defalut food
-var map = [];
-var MR = Math.random;
-var X = 5 + (MR() * (rect_w - 10))|0; // Calculate positions
-var Y = 5 + (MR() * (rect_h - 10))|0; // Calculate positions
-var direction = MR() * 3 | 0;
-var interval = 0;
-var score = 0;
-var sum = 0, easy = 0;
-var i, dir;
-// getting play area 
-var c = document.getElementById('playArea');
-ctx = c.getContext('2d');
-// Map positions
-for (i = 0; i < rect_w; i++)
-{
-map[i] = [];
-}
-// random placement of snake food
-function random_snake()
-{
-var x, y;
-do
-{
-x = MR() * rect_w|0;
-y = MR() * rect_h|0;
-}
-while (map[x][y]);
-map[x][y] = 1;
-ctx.fillStyle = snake_color;
-ctx.strokeRect(x * 10+1, y * 10+1, 8, 8);
-}
-// Default somewhere placement
-random_snake();
-function set_game_speed()
-{
-if (easy)
-{
-X = (X+rect_w)%rect_w;
-Y = (Y+rect_h)%rect_h;
-}
---inc_score;
-if (tn.length)
-{
-dir = tn.pop();
-if ((dir % 2) !== (direction % 2))
-{
-direction = dir;
-}
-}
-if ((easy || (0 <= X && 0 <= Y && X < rect_w && Y < rect_h)) && 2 !== map[X][Y])
-{
-if (1 === map[X][Y])
-{
-score+= Math.max(5, inc_score);
-inc_score = 50;
-random_snake();
-frog++;
-}
-//ctx.fillStyle("#ffffff");
-ctx.fillRect(X * 10, Y * 10, 9, 9);
-map[X][Y] = 2;
-queue.unshift([X, Y]);
-X+= x_dir[direction];
-Y+= y_dir[direction];
-if (frog < queue.length)
-{
-dir = queue.pop()
-map[dir[0]][dir[1]] = 0;
-ctx.clearRect(dir[0] * 10, dir[1] * 10, 10, 10);
-}
-}
-else if (!tn.length)
-{
-var show_score = document.getElementById("show");
-show_score.innerHTML = "You lose!<br /> <u>Your Score:</u> <b>"+score+"</b><br><br> Want to try again?<br><br><input type='button' value='Play Again' onclick='window.location.reload();' />";
-document.getElementById("playArea").style.display = 'none';
-window.clearInterval(interval);
-}
-}
-interval = window.setInterval(set_game_speed, level);
-document.onkeydown = function(e) {
-var code = e.keyCode - 37;
-if (0 <= code && code < 4 && code !== tn[0])
-{
-tn.unshift(code);
-}
-else if (-5 == code)
-{
-if (interval)
-{
-window.clearInterval(interval);
-interval = 0;
-}
-else
-{
-interval = window.setInterval(set_game_speed, 60);
-}
-}
-else
-{
-dir = sum + code;
-if (dir == 44||dir==94||dir==126||dir==171) {
-sum+= code
-} else if (dir === 218) easy = 1;
-}
-}
-}
-</script>
+  <title></title>
+  <style>
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  canvas {
+    border: 1px solid white;
+  }
+  </style>
 </head>
-<body onload="play_game()">
-<h1>Play Snake Game</h1>
-<div id="show"></div>
-<canvas id="playArea" width="450" height="300">Sorry your browser does not support HTML5. Try using like Chrome or Firefox.</canvas>
+<body>
+<canvas width="400" height="400" id="game"></canvas>
+<script>
+var canvas = document.getElementById('game');
+var context = canvas.getContext('2d');
+
+var grid = 16;
+var count = 0;
+
+var snake = {
+  x: 160,
+  y: 160,
+
+  // snake velocity. moves one grid length every frame in either the x or y direction
+  dx: grid,
+  dy: 0,
+
+  // keep track of all grids the snake body occupies
+  cells: [],
+
+  // length of the snake. grows when eating an apple
+  maxCells: 4
+};
+var apple = {
+  x: 320,
+  y: 320
+};
+
+// get random whole numbers in a specific range
+// @see https://stackoverflow.com/a/1527820/2124254
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+
+// game loop
+function loop() {
+  requestAnimationFrame(loop);
+
+  // slow game loop to 15 fps instead of 60 (60/15 = 4)
+  if (++count < 4) {
+    return;
+  }
+
+  count = 0;
+  context.clearRect(0,0,canvas.width,canvas.height);
+
+  // move snake by it's velocity
+  snake.x += snake.dx;
+  snake.y += snake.dy;
+
+  // wrap snake position horizontally on edge of screen
+  if (snake.x < 0) {
+    snake.x = canvas.width - grid;
+  }
+  else if (snake.x >= canvas.width) {
+    snake.x = 0;
+  }
+
+  // wrap snake position vertically on edge of screen
+  if (snake.y < 0) {
+    snake.y = canvas.height - grid;
+  }
+  else if (snake.y >= canvas.height) {
+    snake.y = 0;
+  }
+
+  // keep track of where snake has been. front of the array is always the head
+  snake.cells.unshift({x: snake.x, y: snake.y});
+
+  // remove cells as we move away from them
+  if (snake.cells.length > snake.maxCells) {
+    snake.cells.pop();
+  }
+
+  // draw apple
+  context.fillStyle = 'yellow';
+  context.fillRect(apple.x, apple.y, grid-1, grid-1);
+
+  // draw snake one cell at a time
+  context.fillStyle = 'green';
+  snake.cells.forEach(function(cell, index) {
+
+    // drawing 1 px smaller than the grid creates a grid effect in the snake body so you can see how long it is
+    context.fillRect(cell.x, cell.y, grid-1, grid-1);  
+
+    // snake ate apple
+    if (cell.x === apple.x && cell.y === apple.y) {
+      snake.maxCells++;
+
+      // canvas is 400x400 which is 25x25 grids 
+      apple.x = getRandomInt(0, 25) * grid;
+      apple.y = getRandomInt(0, 25) * grid;
+    }
+
+    // check collision with all cells after this one (modified bubble sort)
+    for (var i = index + 1; i < snake.cells.length; i++) {
+
+      // snake occupies same space as a body part. reset game
+      if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+        snake.x = 160;
+        snake.y = 160;
+        snake.cells = [];
+        snake.maxCells = 4;
+        snake.dx = grid;
+        snake.dy = 0;
+
+        apple.x = getRandomInt(0, 25) * grid;
+        apple.y = getRandomInt(0, 25) * grid;
+      }
+    }
+  });
+}
+
+// listen to keyboard events to move the snake
+document.addEventListener('keydown', function(e) {
+  // prevent snake from backtracking on itself by checking that it's 
+  // not already moving on the same axis (pressing left while moving
+  // left won't do anything, and pressing right while moving left
+  // shouldn't let you collide with your own body)
+
+  // left arrow key
+  if (e.which === 37 && snake.dx === 0) {
+    snake.dx = -grid;
+    snake.dy = 0;
+  }
+  // up arrow key
+  else if (e.which === 38 && snake.dy === 0) {
+    snake.dy = -grid;
+    snake.dx = 0;
+  }
+  // right arrow key
+  else if (e.which === 39 && snake.dx === 0) {
+    snake.dx = grid;
+    snake.dy = 0;
+  }
+  // down arrow key
+  else if (e.which === 40 && snake.dy === 0) {
+    snake.dy = grid;
+    snake.dx = 0;
+  }
+});
+
+// start the game
+requestAnimationFrame(loop);
+</script>
 </body>
-</html>
+</html> 
